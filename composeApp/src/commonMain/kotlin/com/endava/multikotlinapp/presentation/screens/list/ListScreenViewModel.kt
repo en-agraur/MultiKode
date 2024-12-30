@@ -2,37 +2,54 @@ package com.endava.multikotlinapp.presentation.screens.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.endava.multikotlinapp.data.NewsRepository
-import com.endava.multikotlinapp.domain.entities.responses.onError
-import com.endava.multikotlinapp.domain.entities.responses.onSuccess
+import com.endava.multikotlinapp.data.repositories.NewsRepository
+import com.endava.multikotlinapp.data.repositories.TECHNOLOGY
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ListScreenViewModel(
-    private val newsRepository: NewsRepository
-) : ViewModel() {
+class ListScreenViewModel(private val newsRepository: NewsRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(ListScreenState())
     val state: StateFlow<ListScreenState> = _state
 
+    private val _selectedSources = MutableStateFlow<List<String>>(emptyList())
+    val selectedSources = _selectedSources.asStateFlow()
+
+    init {
+        fetchItems()
+    }
+
     private fun fetchItems() {
         viewModelScope.launch {
-            fetchSources()
-            fetchEverything()
+            val value = selectedSources.value
+            val selectedSourcesString = value.joinToString(separator = ",")
+            val news = newsRepository.getTopNews(
+                page = 1,
+                sources = if (value.isNotEmpty()) selectedSourcesString else null,
+                category = if (value.isEmpty()) TECHNOLOGY else null
+            )
+            val sources = newsRepository.getSources()
+            _state.update { it.copy(items = news, sources = sources, isLoading = false, isRefreshing = false) }
         }
     }
 
-    private suspend fun fetchEverything() {
-        newsRepository.getEverything(page = 1)
-            .onSuccess { items -> _state.update { it.copy(items = items, isLoading = false) } }
-            .onError { _state.update { it.copy(errorMessage = "error fetching news") } }
+    fun onRefresh() {
+        _state.update { it.copy(isRefreshing = true) }
+        fetchItems()
     }
 
-    private suspend fun fetchSources() {
-        newsRepository.getSources()
-            .onSuccess { items -> _state.update { it.copy(sources = items, isLoading = false) } }
-            .onError { _state.update { it.copy(errorMessage = "error fetching sources") } }
+    fun onSourceClicked(source: String) {
+        val existingSources = selectedSources.value.toMutableList()
+        if (existingSources.contains(source)) {
+            existingSources.remove(source)
+        } else {
+            existingSources.add(source)
+        }
+        _selectedSources.update { existingSources }
+        _state.update { it.copy(isRefreshing = true) }
+        fetchItems()
     }
 }
