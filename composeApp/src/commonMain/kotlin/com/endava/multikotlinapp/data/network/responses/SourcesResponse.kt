@@ -1,4 +1,4 @@
-package com.endava.multikotlinapp.data.responses
+package com.endava.multikotlinapp.data.network.responses
 
 
 import kotlinx.serialization.SerialName

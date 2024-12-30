@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.endava.multikotlinapp.presentation.screens.bookmarks.BookmarksScreen
 import com.endava.multikotlinapp.presentation.screens.details.DetailsScreen
 import com.endava.multikotlinapp.presentation.screens.list.ListScreen
 import kotlinx.serialization.Serializable
@@ -54,7 +55,10 @@ fun AppNavHost(
         }
 
         composable<Bookmarks> {
-
+            BookmarksScreen(
+                viewModel = koinViewModel(),
+                onNavToDetails = { url, title -> navController.navigate(route = Details(url = url, title)) }
+            )
         }
     }
 }

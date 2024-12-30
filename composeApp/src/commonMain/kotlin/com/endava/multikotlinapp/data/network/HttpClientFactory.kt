@@ -1,7 +1,7 @@
-package com.endava.multikotlinapp.data
+package com.endava.multikotlinapp.data.network
 
-import com.endava.multikotlinapp.data.repositories.API_KEY
-import com.endava.multikotlinapp.data.repositories.API_KEY_VALUE
+import com.endava.multikotlinapp.di.API_KEY
+import com.endava.multikotlinapp.di.API_KEY_VALUE
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout

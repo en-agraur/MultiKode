@@ -1,4 +1,4 @@
-package com.endava.multikotlinapp.data.repositories
+package com.endava.multikotlinapp.di
 
 import com.endava.multikotlinapp.domain.entities.dto.ListItem
 import com.endava.multikotlinapp.domain.entities.dto.Source
@@ -38,7 +38,7 @@ interface NewsRepository {
     ): List<Source>
 
 
-    suspend fun toggleBookmark(item: ListItem)
+    suspend fun toggleBookmark(item: ListItem, isReadLater: Boolean)
 
     suspend fun getBookmarks(): List<ListItem>
 }

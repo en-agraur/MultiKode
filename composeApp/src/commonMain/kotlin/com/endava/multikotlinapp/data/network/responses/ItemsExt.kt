@@ -1,21 +1,15 @@
-package com.endava.multikotlinapp.data.repositories
+package com.endava.multikotlinapp.data.network.responses
 
-import com.endava.multikotlinapp.data.responses.Article
-import com.endava.multikotlinapp.data.responses.Source
 import com.endava.multikotlinapp.domain.entities.dto.ListItem
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 fun Article.toItemDTO() = ListItem(
     publishedAt = this.publishedAt,
-    url = this.url,
-    source = this.source?.toItemDTO(),
+    url = this.url, //this should be unique
     description = this.description,
     title = this.title,
     author = this.author,
     thumbnail = this.urlToImage,
-    id = Uuid.random().toString()
+    source = this.source?.name
 )
 
 fun Source.toItemDTO() = com.endava.multikotlinapp.domain.entities.dto.Source(

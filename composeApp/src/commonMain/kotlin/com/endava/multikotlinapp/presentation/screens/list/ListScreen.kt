@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.LocalPlatformContext
+import com.endava.multikotlinapp.domain.entities.dto.ListItem
+import com.endava.multikotlinapp.domain.entities.dto.Source
 import com.endava.multikotlinapp.presentation.screens.list.components.CardItemComponent
 import com.endava.multikotlinapp.presentation.theme.AppTheme
 
@@ -48,7 +50,8 @@ fun ListScreen(
         onRefresh = viewModel::onRefresh,
         onItemClicked = onNavToDetails,
         onSourceClicked = viewModel::onSourceClicked,
-        selectedSources = selectedSources
+        selectedSources = selectedSources,
+        onReadLaterPressed = viewModel::onReadLaterPressed
     )
 }
 
@@ -62,7 +65,8 @@ fun ListScreenContent(
     scrollState: LazyListState = rememberLazyListState(),
     onRefresh: () -> Unit = {},
     onSourceClicked: (String) -> Unit = {},
-    selectedSources: List<String>?
+    selectedSources: List<String>?,
+    onReadLaterPressed: (Boolean, ListItem) -> Unit = { _, _ -> }
 ) {
 
     if (state.isLoading) {
@@ -88,54 +92,72 @@ fun ListScreenContent(
 
                 val sources = state.sources
                 stickyHeader(key = "sources") {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.s3),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.background(color = MaterialTheme.colorScheme.background)
-                    ) {
-                        items(
-                            items = sources,
-                            key = { it.id.toString() }
-                        ) {
-                            val isSelected = selectedSources?.contains(it.id) == true
-                            FilterChip(
-                                onClick = { onSourceClicked(it.id.toString()) },
-                                label = { Text(it.name.toString()) },
-                                selected = isSelected,
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = MaterialTheme.colorScheme.onPrimary,
-                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                modifier = Modifier.then(
-                                    when {
-                                        sources.indexOf(it) == 0 -> Modifier.padding(start = AppTheme.spacing.s6)
-                                        sources.indexOf(it) == sources.size - 1 -> Modifier.padding(end = AppTheme.spacing.s6)
-                                        else -> Modifier
-                                    }
-                                ),
-                                leadingIcon = {
-                                    if (isSelected) {
-                                        Icon(imageVector = Icons.Default.Check, contentDescription = "selected")
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    SourcesRow(
+                        modifier = Modifier.background(color = MaterialTheme.colorScheme.background),
+                        sources = sources,
+                        selectedSources = selectedSources,
+                        onSourceClicked = onSourceClicked
+                    )
                 }
                 items(
                     items = state.items,
-                    key = { it.id }
+                    key = { it.url.toString() }
                 ) { item ->
+                    val isReadLater = state.readLaterItems.contains(item.url)
                     CardItemComponent(
                         modifier = Modifier.fillMaxWidth(),
                         onItemClicked = { onItemClicked(item.url.toString(), item.title.toString()) },
                         item = item,
-                        context = context
+                        context = context,
+                        isReadLater = isReadLater,
+                        onReadLaterPressed = { onReadLaterPressed(isReadLater, item) }
                     )
                 }
             }
         }
     )
+}
+
+@Composable
+private fun SourcesRow(
+    modifier: Modifier = Modifier,
+    sources: List<Source>,
+    selectedSources: List<String>?,
+    onSourceClicked: (String) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.s3),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+    ) {
+        items(
+            items = sources,
+            key = { it.id.toString() }
+        ) {
+            val isSelected = selectedSources?.contains(it.id) == true
+            FilterChip(
+                onClick = { onSourceClicked(it.id.toString()) },
+                label = { Text(it.name.toString()) },
+                selected = isSelected,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier.then(
+                    when {
+                        sources.indexOf(it) == 0 -> Modifier.padding(start = AppTheme.spacing.s6)
+                        sources.indexOf(it) == sources.size - 1 -> Modifier.padding(end = AppTheme.spacing.s6)
+                        else -> Modifier
+                    }
+                ),
+                leadingIcon = {
+                    if (isSelected) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = "selected")
+                    }
+                }
+            )
+        }
+    }
 }

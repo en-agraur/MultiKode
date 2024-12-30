@@ -1,7 +1,21 @@
 package com.endava.multikotlinapp.data.repositories
 
-import com.endava.multikotlinapp.data.responses.ArticlesResponse
-import com.endava.multikotlinapp.data.responses.SourcesResponse
+import com.endava.multikotlinapp.data.local.daos.ReadLaterDao
+import com.endava.multikotlinapp.data.local.entities.ReadLaterItem
+import com.endava.multikotlinapp.data.network.responses.Article
+import com.endava.multikotlinapp.data.network.responses.ArticlesResponse
+import com.endava.multikotlinapp.data.network.responses.SourcesResponse
+import com.endava.multikotlinapp.data.network.responses.toItemDTO
+import com.endava.multikotlinapp.di.CATEGORY
+import com.endava.multikotlinapp.di.COUNTRY
+import com.endava.multikotlinapp.di.LANGUAGE
+import com.endava.multikotlinapp.di.NewsRepository
+import com.endava.multikotlinapp.di.PAGE
+import com.endava.multikotlinapp.di.PAGE_SIZE
+import com.endava.multikotlinapp.di.QUERY
+import com.endava.multikotlinapp.di.SOURCES
+import com.endava.multikotlinapp.di.SOURCES_URL
+import com.endava.multikotlinapp.di.TOP_HEADLINES_URL
 import com.endava.multikotlinapp.domain.entities.dto.ListItem
 import com.endava.multikotlinapp.domain.entities.dto.Source
 import io.ktor.client.HttpClient
@@ -15,7 +29,8 @@ import org.lighthousegames.logging.logging
 
 class NewsRepositoryImpl(
     private val httpClient: HttpClient,
-    private val coroutineDispatcher: CoroutineDispatcher
+    private val coroutineDispatcher: CoroutineDispatcher,
+    private val readLaterDao: ReadLaterDao
 ) : NewsRepository {
 
     private val log = logging(NewsRepositoryImpl::class.simpleName)
@@ -43,7 +58,11 @@ class NewsRepositoryImpl(
 
         //todo create a wrapper over this to handle better the responses
         if (networkRequest.status == "ok") {
-            return@withContext networkRequest.articles.map { it.toItemDTO() }
+            return@withContext networkRequest.articles
+                .asSequence()
+                .filter(Article::isValid)
+                .map(Article::toItemDTO)
+                .toList()
         }
 
         return@withContext emptyList()
@@ -67,11 +86,35 @@ class NewsRepositoryImpl(
         return@withContext emptyList()
     }
 
-    override suspend fun toggleBookmark(item: ListItem) {
-        TODO("Not yet implemented")
+    override suspend fun toggleBookmark(item: ListItem, isReadLater: Boolean) {
+        val readLaterItem = ReadLaterItem(
+            title = item.title!!,
+            url = item.url!!,
+            description = item.description,
+            publishedAt = item.publishedAt,
+            thumbnail = item.thumbnail,
+            author = item.author,
+            source = item.source
+        )
+        if (!isReadLater) {
+            readLaterDao.upsert(readLaterItem)
+        } else {
+            readLaterDao.delete(readLaterItem)
+        }
     }
 
     override suspend fun getBookmarks(): List<ListItem> {
-        TODO("Not yet implemented")
+        val readLaterItems = readLaterDao.getAll()
+        return readLaterItems.map { readLater ->
+            ListItem(
+                title = readLater.title,
+                url = readLater.url,
+                description = readLater.description,
+                publishedAt = readLater.publishedAt,
+                thumbnail = readLater.thumbnail,
+                author = readLater.author,
+                source = readLater.source
+            )
+        }
     }
 }

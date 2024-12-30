@@ -1,4 +1,4 @@
-package com.endava.multikotlinapp.data.responses
+package com.endava.multikotlinapp.data.network.responses
 
 
 import kotlinx.serialization.SerialName
@@ -14,4 +14,6 @@ data class Article(
     @SerialName("title") val title: String? = null,
     @SerialName("url") val url: String? = null,
     @SerialName("urlToImage") val urlToImage: String? = null
-)
+) {
+    val isValid: Boolean = url != null && title != null
+}
