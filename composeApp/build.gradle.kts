@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -9,6 +10,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.osDetector)
 }
 
 kotlin {
@@ -17,7 +19,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -28,16 +30,16 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     jvm("desktop")
 
     room {
         schemaDirectory("$projectDir/schemas")
     }
-    
+
     sourceSets {
         val desktopMain by getting
-        
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -73,10 +75,24 @@ kotlin {
 
         }
         desktopMain.dependencies {
+            val fxSuffix = when (osdetector.classifier) {
+                "linux-x86_64" -> "linux"
+                "linux-aarch_64" -> "linux-aarch64"
+                "windows-x86_64" -> "win"
+                "osx-x86_64" -> "mac"
+                "osx-aarch_64" -> "mac-aarch64"
+                else -> throw IllegalStateException("Unknown OS: ${osdetector.classifier}")
+            }
+
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.okhttp)
-
+            implementation("org.openjfx:javafx-base:21:${fxSuffix}")
+            implementation("org.openjfx:javafx-graphics:21:${fxSuffix}")
+            implementation("org.openjfx:javafx-controls:20:${fxSuffix}")
+            implementation("org.openjfx:javafx-swing:21:${fxSuffix}")
+            implementation("org.openjfx:javafx-web:19:${fxSuffix}")
+            implementation("org.openjfx:javafx-media:19:${fxSuffix}")
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
